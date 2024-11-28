@@ -15,54 +15,55 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v2
+    - name: Checkout Repository
+      uses: actions/checkout@v2
 
-      - name: Add OpenMW PPA Dependencies
-        run: |
-          sudo add-apt-repository ppa:openmw/openmw
-          sudo apt-get update
+    - name: Add OpenMW PPA Dependencies
+      run: |
+        sudo add-apt-repository ppa:openmw/openmw -y
+        sudo apt-get update
 
-      - name: Install Building Dependencies
-        run: sudo CI/install_debian_deps.sh gcc openmw-deps openmw-deps-dynamic
+    - name: Install Building Dependencies
+      run: sudo CI/install_debian_deps.sh gcc openmw-deps openmw-deps-dynamic
 
-      - name: Prime ccache
-        uses: hendrikmuhs/ccache-action@v1
-        with:
-          key: ubuntu-${{ env.BUILD_TYPE }}
-          max-size: 1000M
+    - name: Prime ccache
+      uses: hendrikmuhs/ccache-action@v1
+      with:
+        key: ubuntu-${{ env.BUILD_TYPE }}
+        max-size: 1000M
 
-      - name: Configure
-        run: |
-          cmake .
-          -D CMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
-          -D OPENMW_USE_SYSTEM_RECASTNAVIGATION=ON
-          -D USE_SYSTEM_TINYXML=ON
-          -D BUILD_COMPONENTS_TESTS=ON
-          -D BUILD_OPENMW_TESTS=ON
-          -D BUILD_OPENCS_TESTS=ON
-          -D CMAKE_INSTALL_PREFIX=install
+    - name: Configure
+      run: |
+        cmake . \
+        -D CMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
+        -D OPENMW_USE_SYSTEM_RECASTNAVIGATION=ON \
+        -D USE_SYSTEM_TINYXML=ON \
+        -D BUILD_COMPONENTS_TESTS=ON \
+        -D BUILD_OPENMW_TESTS=ON \
+        -D BUILD_OPENCS_TESTS=ON \
+        -D CMAKE_INSTALL_PREFIX=install
 
-      - name: Build
-        run: cmake --build . -- -j$(nproc)
+    - name: Build
+      run: cmake --build . -- -j$(nproc)
 
-      - name: Install
-        run: cmake --install . --prefix ./output
+    - name: Run Components Tests
+      run: ./components-tests
 
-      - name: Archive Build Artifacts
-        run: tar -czvf openmw.tar.gz -C ./output .
+    - name: Run OpenMW Tests
+      run: ./openmw-tests
 
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: openmw
-          path: openmw.tar.gz
+    - name: Run OpenMW-CS Tests
+      run: ./openmw-cs-tests
 
-      - name: Run components tests
-        run: ./components-tests
+    - name: Install OpenMW
+      run: cmake --install . --prefix ./install
 
-      - name: Run OpenMW tests
-        run: ./openmw-tests
+    - name: Create OpenMW Archive
+      run: |
+        tar -czvf openmw.tar.gz -C install .
 
-      - name: Run OpenMW-CS tests
-        run: ./openmw-cs-tests
+    - name: Upload OpenMW Archive
+      uses: actions/upload-artifact@v4
+      with:
+        name: openmw.tar.gz
+        path: ./openmw.tar.gz
