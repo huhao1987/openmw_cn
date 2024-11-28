@@ -3,7 +3,7 @@ name: CMake
 on:
   push:
     branches:
-      - main
+      - huhao1987-patch-1
   pull_request:
 
 env:
@@ -45,6 +45,18 @@ jobs:
 
       - name: Build
         run: cmake --build . -- -j$(nproc)
+
+      - name: Install
+        run: cmake --install . --prefix ./output
+
+      - name: Archive Build Artifacts
+        run: tar -czvf openmw.tar.gz -C ./output .
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: openmw
+          path: openmw.tar.gz
 
       - name: Run components tests
         run: ./components-tests
